@@ -1,0 +1,17 @@
+{
+  "bilibili": {
+    "room_id": "123",
+    "弹幕": {
+      "prompt": "{text}",
+      "speech": "{text}。{gpt}"
+    },
+    "礼物": {
+      "prompt": "{text}\n 请表示感谢，说一句赞美他的话！",
+      "speech": "{gpt}"
+    },
+    "sc": {
+      "prompt": "{text}",
+      "speech": "{text}。{gpt}"
+    }
+  }
+}
