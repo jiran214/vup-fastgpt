@@ -31,11 +31,12 @@ tts_cfg['proxy'] = config.proxy
 async def tts_save(text):
     tts = edge_tts.Communicate(text=text, **tts_cfg)
     path = config.voice_path / f"{str(time.time())[:10]}.mp3"
+    path = str(path)
     await tts.save(path)
     return path
 
 
-def play_sound(file_path):
+def play_sound(file_path: str):
     with audio_lock:
         # 播放生成的语音文件
         mixer.init()

@@ -4,11 +4,18 @@
 # @Author  : 雷雨
 # @File    : bilibili.py
 # @Desc    :
+import asyncio
+
+import httpx
 from bilibili_api import sync
+from bilibili_api.utils import network
+from bilibili_api.utils.credential import Credential
+
+import config
 from utils import enums, live_queue
 
 
-def on_danmaku(event_dict):
+async def on_danmaku(event_dict):
     input_vars = {
         'text': event_dict['data']['info'][1],
         'user_name': event_dict['data']['info'][2][1],
@@ -18,7 +25,7 @@ def on_danmaku(event_dict):
     live_queue.send(input_vars)
 
 
-def on_gift(event_dict):
+async def on_gift(event_dict):
     info = event_dict['data']['data']
     input_vars = {
         'user_name': info['uname'],
@@ -32,7 +39,7 @@ def on_gift(event_dict):
     live_queue.send(input_vars)
 
 
-def on_super_chat(event_dict):
+async def on_super_chat(event_dict):
     info = event_dict['data']['data']
     user_info = info['user_info']
     input_vars = {
@@ -47,12 +54,21 @@ def on_super_chat(event_dict):
 
 
 class BlLiveRoom:
-    def __init__(self, room_id):
+    def __init__(self, room_id, credential_params, debug):
         try:
             from bilibili_api import live, sync
         except ImportError:
             raise 'Please run pip install bilibili-api-python'
-        self.room = live.LiveDanmaku(room_id)
+
+        from bilibili_api import settings
+        # settings.proxy = config.proxy
+
+        credential = Credential(**credential_params)
+        self.room = live.LiveDanmaku(
+            room_display_id=int(room_id),
+            debug=debug,
+            credential=credential
+        )
         self.add_event_listeners()
 
     def add_event_listeners(self):
@@ -60,10 +76,13 @@ class BlLiveRoom:
             'DANMU_MSG': on_danmaku,
             'SEND_GIFT': on_gift,
             'SUPER_CHAT_MESSAGE': on_super_chat,
-            'INTERACT_WORD': lambda event_dict: None,
+            # 'INTERACT_WORD': None
         }
         for item in listener_map.items():
             self.room.add_event_listener(*item)
 
     def connect(self):
-        sync(self.room.connect())
+        # sync(self.room.connect())
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.room.connect())

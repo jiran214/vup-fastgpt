@@ -7,8 +7,6 @@
 import queue
 from typing import Union
 
-from utils import log
-
 
 class LiveQueue:
     def __init__(self, maxsize=15):
@@ -16,7 +14,6 @@ class LiveQueue:
 
     def send(self, event: Union[dict, None]):
         if not event:
-            log.debug(f'过滤:{event}')
             return
         else:
             if not self.event_queue.full():

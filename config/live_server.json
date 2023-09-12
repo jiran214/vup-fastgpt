@@ -1,6 +1,13 @@
 {
   "bilibili": {
-    "room_id": "123",
+    "room_id": 21587367,
+    "credential": {
+      "sessdata": "0bef7d1b%2C1710091984%2Cdd09c%2A91CjBokNCmTnsRuwrvaU93B188bVqa3hFAu0tu7oefx_7rSWWmjkJo1L0ZKWiV2o2ZvAASVkR4VEpTUzhHNThCTEZmMFBDVXRmQ0tYdzJzaExtZzUyTkotanZmN2VtMUJXdEhKdEQxdHRHOFhKZDV3WlNPS0VyNnNpVWtUejBlTlhyNng0Z1U5eVJnIIEC",
+      "bili_jct": "15a331529e1396dc09116f25ad539225",
+      "buvid3": "7FBCC946-3762-249F-5F44-A76F1737260657495infoc",
+      "dedeuserid": "410282523",
+      "ac_time_value": "ee742ca7c376a3faeff6de958d3e4a91"
+    },
     "弹幕": {
       "prompt": "{text}",
       "speech": "{text}。{gpt}"

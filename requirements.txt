@@ -1,0 +1,7 @@
+edge_tts
+bilibili-api-python
+loguru
+openai
+langchain
+ratelimit
+pygame

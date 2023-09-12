@@ -4,3 +4,13 @@
 # @Author  : 雷雨
 # @File    : main.py
 # @Desc    :
+import threading
+from typing import Callable
+import jobs
+from utils.concurrent import start_thread
+
+if __name__ == '__main__':
+    producer = start_thread(jobs.LiveJob('bilibili'))
+    consumer = start_thread(jobs.GPTJob())
+    producer.join()
+    consumer.join()
