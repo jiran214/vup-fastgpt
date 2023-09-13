@@ -5,16 +5,20 @@
 # @File    : queues.py
 # @Desc    :
 import queue
+import time
 from typing import Union
+
+from utils import log
 
 
 class LiveQueue:
     def __init__(self, maxsize=15):
         self.event_queue = queue.Queue(maxsize)
+        self.high_event_queue = queue.Queue()
 
-    def send(self, event: Union[dict, None]):
-        if not event:
-            return
+    def send(self, event: Union[dict, None], is_high_event=False):
+        if is_high_event:
+            self.high_event_queue.put_nowait(event)
         else:
             if not self.event_queue.full():
                 self.event_queue.put_nowait(event)
@@ -22,8 +26,12 @@ class LiveQueue:
                 self.event_queue.put(event)
 
     def recv(self) -> Union[None, dict]:
-        if not self.event_queue.empty():
+        if self.high_event_queue.not_empty:
+            event = self.event_queue.get()
+        elif not self.event_queue.empty():
             event = self.event_queue.get()
         else:
-            event = None
+            time.sleep(1)
+            log.debug('no event vup waiting...')
+            return self.recv()
         return event

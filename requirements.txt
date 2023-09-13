@@ -5,3 +5,4 @@ openai
 langchain
 ratelimit
 pygame
+scipy==1.7.3

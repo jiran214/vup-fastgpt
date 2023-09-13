@@ -26,6 +26,7 @@ config_path = root.parent / 'config'
 react_params = json.loads(open(file=config_path / 'react.json', mode='r').read())
 speech_text_params = json.loads(open(file=config_path / 'speech_text.json', mode='r').read())
 live_params = json.loads(open(file=config_path / 'live_server.json', encoding='utf-8', mode='r').read())
+scheduler_params = json.loads(open(file=config_path / 'scheduler.json', encoding='utf-8', mode='r').read())
 
 
 # 初始化配置

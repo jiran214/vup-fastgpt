@@ -11,3 +11,4 @@ class LiveInputType(enum.Enum):
     danmu = '弹幕'
     gift = '礼物'
     sc = 'sc'
+    scheduler = '调度任务'
