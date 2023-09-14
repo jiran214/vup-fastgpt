@@ -18,11 +18,12 @@ voice_path = static_path / 'voice'
 config_path = root.parent / 'config'
 
 
-# json 配置读取
+# 文件配置读取
 react_params = json.loads(open(file=config_path / 'react.json', mode='r').read())
 llm_params = json.loads(open(file=config_path / 'llm.json', mode='r').read())
 live_params = json.loads(open(file=config_path / 'live_server.json', encoding='utf-8', mode='r').read())
 scheduler_params = json.loads(open(file=config_path / 'scheduler.json', encoding='utf-8', mode='r').read())
+filter_words = [line.strip() for line in open(file=config_path / 'filter_words.txt', encoding='utf-8', mode='r').readlines()]
 
 
 # 初始化配置

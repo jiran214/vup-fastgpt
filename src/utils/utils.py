@@ -7,6 +7,7 @@ from scipy import spatial
 class Record(BaseModel):
     prompt: str
     speech: str
+    action: str
     time: str
 
 

@@ -11,10 +11,11 @@ from bilibili_api import sync
 
 import config
 from producers.bilibili_server import BlLiveRoom
-from react.vts import VTSOperator
+from modules.vts import VTSOperator
 from utils import live_queue, log
 import vup
 from utils.enums import LiveInputType
+from utils.filter import DFA
 from utils.utils import Record
 
 
@@ -68,6 +69,7 @@ class SchedulerProducer:
 class VupConsumer:
 
     bl_cfg = config.live_params['bilibili']
+    dfa = DFA(config.filter_words)
 
     def __init__(self):
         vts_opt = sync(VTSOperator.init())
@@ -90,15 +92,28 @@ class VupConsumer:
             log.error(f'模版构造错误 event:{event}')
             log.exception(e)
             return
-        output_text = self.vup.brain.think(prompt)
 
         # step 生成语音文本
+        output_text = self.vup.brain.think(prompt)
         speech = speech_temple.format(**event, gpt=output_text)
+        # step 违禁词过滤
+        if words := self.dfa.match(speech):
+            log.warning(f'触发违禁词过滤-speech:{speech}-words:{words}')
+            return
+
+        # step 生成动作
+        output_action = self.vup.body.feel(prompt)
+
+        # step react
         self.vup.mouth.speak(speech)
+        self.vup.body.action(output_action)
+
+        # step 存档
         cost_time = str(time.time() - t0)[:4]
         record = Record(
             prompt=prompt,
             speech=speech,
+            action=output_action,
             time=cost_time
         )
         log.info(f'完成一轮回应:{record}')
