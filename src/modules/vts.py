@@ -23,7 +23,7 @@ class VTSOperator:
         self.vts = vts
 
     @classmethod
-    def init(cls):
+    async def init(cls):
         try:
             import pyvts
         except ImportError:

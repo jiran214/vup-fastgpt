@@ -8,8 +8,6 @@ import queue
 import time
 from typing import Union
 
-from utils import log
-
 
 class LiveQueue:
     def __init__(self, maxsize=15):
@@ -32,6 +30,5 @@ class LiveQueue:
             event = self.event_queue.get()
         else:
             time.sleep(1)
-            log.debug('no event vup waiting...')
             return self.recv()
         return event

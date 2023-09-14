@@ -11,15 +11,14 @@ from bilibili_api import sync
 
 import config
 from producers.bilibili_server import BlLiveRoom
+from react.vts import VTSOperator
 from utils import live_queue, log
 import vup
-from react import tts
-from utils.concurrent import start_thread
 from utils.enums import LiveInputType
 from utils.utils import Record
 
 
-class LiveJob:
+class LiveProducer:
 
     def __init__(self, platform, debug=False):
         self.platform = platform
@@ -34,7 +33,7 @@ class LiveJob:
         r.connect()
 
 
-class SchedulerJob:
+class SchedulerProducer:
     wait_seconds = 10
 
     def __init__(self):
@@ -66,13 +65,17 @@ class SchedulerJob:
         self.scheduler.run_pending()
 
 
-class GPTJob:
+class VupConsumer:
+
     bl_cfg = config.live_params['bilibili']
 
+    def __init__(self):
+        vts_opt = sync(VTSOperator.init())
+        self.vup = vup.VTuber(vts_opt)
 
     def handle(self, event):
         # step 生成gpt文本
-
+        t0 = time.time()
         if event['type'] == LiveInputType.scheduler:
             # 调度任务处理
             temple = event
@@ -87,34 +90,26 @@ class GPTJob:
             log.error(f'模版构造错误 event:{event}')
             log.exception(e)
             return
-        output_text = brain.think(prompt)
+        output_text = self.vup.brain.think(prompt)
 
         # step 生成语音文本
         speech = speech_temple.format(**event, gpt=output_text)
-        return speech, prompt
+        self.vup.mouth.speak(speech)
+        cost_time = str(time.time() - t0)[:4]
+        record = Record(
+            prompt=prompt,
+            speech=speech,
+            time=cost_time
+        )
+        log.info(f'完成一轮回应:{record}')
 
     def __call__(self):
         while True:
             event = live_queue.recv()
             try:
-                t0 = time.time()
-                speech, prompt = self.handle(event)
-                start_thread(lambda: ReactJob()(speech))
-                cost_time = str(time.time() - t0)[:4]
-                record = Record(
-                    prompt=prompt,
-                    speech=speech,
-                    time=cost_time
-                )
-                log.info(f'完成一轮回应:{record}')
+                self.handle(event)
             except Exception as e:
                 raise e
                 # log.error(e)
 
-
-class ReactJob:
-
-    def __call__(self, speech_text):
-        path = sync(tts.tts_save(speech_text))
-        tts.play_sound(path)
 

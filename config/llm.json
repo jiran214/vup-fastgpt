@@ -1,4 +1,10 @@
 {
+  "base": {
+    "proxy": null,
+    "openai_key_list": [
+      "xxxx"
+    ]
+  },
   "gpt": {
     "temperature": 0.7,
     "openai_api_base": null,

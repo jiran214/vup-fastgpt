@@ -4,13 +4,14 @@
 # @Author  : 雷雨
 # @File    : main.py
 # @Desc    :
-import threading
-from typing import Callable
-import jobs
+import config
+import threads
 from utils.concurrent import start_thread
 
+
 if __name__ == '__main__':
-    producer = start_thread(jobs.LiveJob('bilibili'))
-    consumer = start_thread(jobs.GPTJob())
-    producer.join()
+    producers = [start_thread(threads.SchedulerProducer())] if config.scheduler_params else None
+    producers.append(start_thread(threads.LiveProducer('bilibili')))
+    consumer = start_thread(threads.VupConsumer())
+    [producer.join() for producer in producers]
     consumer.join()
