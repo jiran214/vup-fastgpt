@@ -29,6 +29,7 @@ class VTSOperator:
         except ImportError:
             raise 'Please run pip install pyvts'
         if not pathlib.Path(plugin_info['authentication_token_path']).exists():
+            log.info('首次运行，按照提示获取vts令牌')
             return cls.get_token()
         vts = pyvts.vts(plugin_info=plugin_info)
         await vts.connect()
