@@ -6,6 +6,8 @@
 # @Desc    :
 from bilibili_api import sync
 from langchain.schema import SystemMessage, HumanMessage
+
+import config
 from utils.utils import top_n_indices_from_embeddings
 
 from modules import tts, llm
@@ -14,10 +16,11 @@ from modules.vts import VTSOperator
 
 class Brain:
     def think(self, input_text):
-        # 使用Fastgpt不需要 SystemMessage(content="...", additional_kwargs={}),
-        messages = [
-            HumanMessage(content=input_text)
-        ]
+        # 使用Fastgpt不需要 SystemMessage
+        messages = []
+        if system := config.llm_params['gpt']['system']:
+            messages.append(SystemMessage(content=system, additional_kwargs={}),)
+        messages.append(HumanMessage(content=input_text))
         chat_model_res = llm.chat_model.generate([messages])
         output_text = chat_model_res.generations[0][0].text
         return output_text
