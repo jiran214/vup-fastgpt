@@ -5,6 +5,7 @@ from scipy import spatial
 
 
 class Record(BaseModel):
+    event: dict
     prompt: str
     speech: str
     action: str

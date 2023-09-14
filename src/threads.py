@@ -14,6 +14,7 @@ from producers.bilibili_server import BlLiveRoom
 from modules.vts import VTSOperator
 from utils import live_queue, log
 import vup
+from utils.concurrent import start_thread
 from utils.enums import LiveInputType
 from utils.filter import DFA
 from utils.utils import Record
@@ -77,6 +78,7 @@ class VupConsumer:
 
     def handle(self, event):
         # step 生成gpt文本
+        log.info('step1:生成prompt')
         t0 = time.time()
         if event['type'] == LiveInputType.scheduler:
             # 调度任务处理
@@ -93,7 +95,10 @@ class VupConsumer:
             log.exception(e)
             return
 
-        # step 生成语音文本
+        log.info('step2:生成动作')
+        action_thread = start_thread(self.vup.body.feel(prompt))
+
+        log.info('step3:生成语音文本')
         output_text = self.vup.brain.think(prompt)
         speech = speech_temple.format(**event, gpt=output_text)
         # step 违禁词过滤
@@ -101,25 +106,25 @@ class VupConsumer:
             log.warning(f'触发违禁词过滤-speech:{speech}-words:{words}')
             return
 
-        # step 生成动作
-        output_action = self.vup.body.feel(prompt)
-
-        # step react
+        log.info('step4:播放语音和动作')
         self.vup.mouth.speak(speech)
-        self.vup.body.action(output_action)
+        action_thread.join()
+        self.vup.body.action(self.vup.body.action_name)
 
         # step 存档
         cost_time = str(time.time() - t0)[:4]
         record = Record(
+            event=event,
             prompt=prompt,
             speech=speech,
-            action=output_action,
+            action=self.vup.body.action_name,
             time=cost_time
         )
-        log.info(f'完成一轮回应:{record}')
+        log.info(f'step end:{record}')
 
     def __call__(self):
         while True:
+            log.info('step0:收到生产者消息')
             event = live_queue.recv()
             try:
                 self.handle(event)

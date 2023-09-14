@@ -4,10 +4,13 @@
 # @Author  : 雷雨
 # @File    : brain.py
 # @Desc    :
+import time
+
 from bilibili_api import sync
 from langchain.schema import SystemMessage, HumanMessage
 
 import config
+from utils.concurrent import start_thread
 from utils.utils import top_n_indices_from_embeddings
 
 from modules import tts, llm
@@ -28,8 +31,9 @@ class Brain:
 
 class Mouth:
     def speak(self, speech_text):
-        path = sync(tts.tts_save(speech_text))
-        tts.play_sound(path)
+        start_thread(
+            lambda: tts.play_sound(sync(tts.tts_save(speech_text)))
+        )
 
 
 class Body:
@@ -38,16 +42,21 @@ class Body:
         self.live2D_actions = vts_opt.live2D_actions
         self.live2D_embeddings = llm.Embedding.aembed_documents(texts=vts_opt.live2D_actions)
         self.vts_opt = vts_opt
+        self.action_name = None
 
     def feel(self, input_text):
         txt_embedding = llm.Embedding.embed_query(input_text)
         action_name = self.live2D_actions[
             int(top_n_indices_from_embeddings(txt_embedding, self.live2D_embeddings, top=1)[0])
         ]
-        return action_name
+        self.action_name = action_name
 
     def action(self, action_name):
-        sync(self.vts_opt.play_action(action_name))
+        start_thread(lambda: (
+            # 等待1秒再做动作
+            time.sleep(1),
+            sync(self.vts_opt.play_action(action_name))
+        ))
 
 
 class VTuber:
