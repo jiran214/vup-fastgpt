@@ -10,7 +10,7 @@ from bilibili_api import sync
 from langchain.schema import SystemMessage, HumanMessage
 
 import config
-from utils.concurrent import start_thread
+from utils.concurrent import Thread
 from utils.utils import top_n_indices_from_embeddings
 
 from modules import tts, llm
@@ -31,7 +31,7 @@ class Brain:
 
 class Mouth:
     def speak(self, speech_text):
-        start_thread(
+        Thread(
             lambda: tts.play_sound(sync(tts.tts_save(speech_text)))
         )
 
@@ -52,7 +52,7 @@ class Body:
         self.action_name = action_name
 
     def action(self, action_name):
-        start_thread(lambda: (
+        Thread(lambda: (
             # 等待1秒再做动作
             time.sleep(1),
             sync(self.vts_opt.play_action(action_name))

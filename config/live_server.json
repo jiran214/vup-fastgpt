@@ -20,5 +20,11 @@
       "prompt": "{text}",
       "speech": "{text}。{gpt}"
     }
+  },
+  "wechat":{
+    "弹幕": {
+      "prompt": "{text}",
+      "speech": "{text}。{gpt}"
+    }
   }
 }

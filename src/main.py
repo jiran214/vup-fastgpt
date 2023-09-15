@@ -6,14 +6,17 @@
 # @Desc    :
 import config
 import threads
-from utils.concurrent import start_thread
+from utils.concurrent import Thread
 
 
 if __name__ == '__main__':
+    # platform = 'wechat'
+    platform = 'bilibili'
+
     # 初始化
-    producers = [start_thread(threads.SchedulerProducer())] if config.scheduler_params else None
-    producers.append(start_thread(threads.LiveProducer('bilibili')))
-    consumer = start_thread(threads.VupConsumer())
+    producers = [Thread(threads.SchedulerProducer())] if config.scheduler_params else None
+    producers.append(Thread(threads.LiveProducer(platform)))
+    consumer = Thread(threads.VupConsumer(platform))
 
     # 启动
     [producer.join() for producer in producers]

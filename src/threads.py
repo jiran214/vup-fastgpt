@@ -14,7 +14,7 @@ from producers.bilibili_server import BlLiveRoom
 from modules.vts import VTSOperator
 from utils import live_queue, log
 import vup
-from utils.concurrent import start_thread
+from utils.concurrent import Thread
 from utils.enums import LiveInputType
 from utils.filter import DFA
 from utils.utils import Record
@@ -69,12 +69,14 @@ class SchedulerProducer:
 
 class VupConsumer:
 
-    bl_cfg = config.live_params['bilibili']
     dfa = DFA(config.filter_words)
 
-    def __init__(self):
+    def __init__(self, platform):
+        assert platform in ('wechat', 'bilibili')
         vts_opt = sync(VTSOperator.init())
         self.vup = vup.VTuber(vts_opt)
+        self.platform = platform
+        self.live_cfg = config.live_params[platform]
 
     def handle(self, event):
         # step 生成gpt文本
@@ -85,7 +87,7 @@ class VupConsumer:
             temple = event
         else:
             # 弹幕服务器处理
-            temple = self.bl_cfg[event['type'].value]
+            temple = self.live_cfg[event['type'].value]
 
         prompt_temple, speech_temple = temple['prompt'], temple['speech']
         try:
@@ -96,7 +98,7 @@ class VupConsumer:
             return
 
         log.info('step2:生成动作')
-        action_thread = start_thread(self.vup.body.feel(prompt))
+        action_thread = Thread(self.vup.body.feel(prompt))
 
         log.info('step3:生成语音文本')
         output_text = self.vup.brain.think(prompt)
