@@ -6,3 +6,5 @@ langchain
 ratelimit
 pygame
 scipy==1.7.3
+pyvts
+schedule

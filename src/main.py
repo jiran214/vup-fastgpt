@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     # 初始化
     producers = [Thread(threads.SchedulerProducer())] if config.scheduler_params else None
-    producers.append(Thread(threads.LiveProducer(platform)))
+    # producers.append(Thread(threads.LiveProducer(platform)))
     consumer = Thread(threads.VupConsumer(platform))
 
     # 启动

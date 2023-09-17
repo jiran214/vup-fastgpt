@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 
+import openai
 
 # 基础配置
 debug = True
@@ -33,3 +34,8 @@ openai_key_list = llm_params['base']['openai_key_list']
 if proxy:
     os.environ['HTTPS_PORXY'] = proxy
     os.environ['HTTP_PORXY'] = proxy
+    openai.proxy = proxy
+
+
+# 功能选项
+action = False

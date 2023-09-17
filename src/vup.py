@@ -18,13 +18,13 @@ from modules.vts import VTSOperator
 
 
 class Brain:
-    def think(self, input_text):
+    def think(self, input_text, **model_kwargs):
         # 使用Fastgpt不需要 SystemMessage
         messages = []
-        if system := config.llm_params['gpt']['system']:
+        if system := config.llm_params['prompt']['system']:
             messages.append(SystemMessage(content=system, additional_kwargs={}),)
         messages.append(HumanMessage(content=input_text))
-        chat_model_res = llm.chat_model.generate([messages])
+        chat_model_res = llm.chat_model.generate([messages], **model_kwargs)
         output_text = chat_model_res.generations[0][0].text
         return output_text
 
@@ -38,9 +38,10 @@ class Mouth:
 
 class Body:
 
-    def __init__(self, vts_opt: VTSOperator):
+    def __init__(self):
+        vts_opt = sync(VTSOperator.init())
         self.live2D_actions = vts_opt.live2D_actions
-        self.live2D_embeddings = llm.Embedding.aembed_documents(texts=vts_opt.live2D_actions)
+        self.live2D_embeddings = llm.Embedding.embed_documents(texts=vts_opt.live2D_actions)
         self.vts_opt = vts_opt
         self.action_name = None
 
@@ -52,6 +53,9 @@ class Body:
         self.action_name = action_name
 
     def action(self, action_name):
+        if not action_name:
+            action_name = None
+            return
         Thread(lambda: (
             # 等待1秒再做动作
             time.sleep(1),
@@ -60,7 +64,7 @@ class Body:
 
 
 class VTuber:
-    def __init__(self, vts_opt):
+    def __init__(self):
         self.brain = Brain()
         self.mouth = Mouth()
-        self.body = Body(vts_opt)
+        self.body = Body() if config.action else None

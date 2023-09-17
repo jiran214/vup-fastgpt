@@ -6,7 +6,7 @@
 # @Desc    :
 import time
 
-import schedule as schedule
+import schedule
 from bilibili_api import sync
 
 import config
@@ -53,11 +53,11 @@ class SchedulerProducer:
                 "type": LiveInputType.scheduler,
                 **value
             }
-            log.info(f'调度事件创建完毕:{name}')
             if frequency := value.get('frequency'):
-                schedule.every(int(frequency)).minutes.do(live_queue.send, (event, True))
+                schedule.every(int(frequency)).seconds.do(lambda: live_queue.send(event, True))
             elif timing := value.get('timing'):
-                schedule.every().day.at(timing).do(live_queue.send, (event, True))
+                schedule.every().day.at(timing).do(lambda: live_queue.send(event, True))
+        log.info(f'调度事件创建完毕:{schedule.jobs}')
         return schedule
 
     def __call__(self, *args, **kwargs):
@@ -70,21 +70,23 @@ class SchedulerProducer:
 class VupConsumer:
 
     dfa = DFA(config.filter_words)
+    log.debug(f"加载违禁词成功:数量{len(config.filter_words)}-预览：{str(config.filter_words[:10])}...")
 
     def __init__(self, platform):
         assert platform in ('wechat', 'bilibili')
-        vts_opt = sync(VTSOperator.init())
-        self.vup = vup.VTuber(vts_opt)
+        self.vup = vup.VTuber()
         self.platform = platform
         self.live_cfg = config.live_params[platform]
 
     def handle(self, event):
+        model_kwargs = {}
         # step 生成gpt文本
         log.info('step1:生成prompt')
         t0 = time.time()
         if event['type'] == LiveInputType.scheduler:
             # 调度任务处理
             temple = event
+            model_kwargs = {'max_tokens': None}
         else:
             # 弹幕服务器处理
             temple = self.live_cfg[event['type'].value]
@@ -98,10 +100,10 @@ class VupConsumer:
             return
 
         log.info('step2:生成动作')
-        action_thread = Thread(self.vup.body.feel(prompt))
+        action_thread = Thread(self.vup.body.feel(prompt)) if self.vup.body else None
 
         log.info('step3:生成语音文本')
-        output_text = self.vup.brain.think(prompt)
+        output_text = self.vup.brain.think(prompt, **model_kwargs)
         speech = speech_temple.format(**event, gpt=output_text)
         # step 违禁词过滤
         if words := self.dfa.match(speech):
@@ -110,8 +112,10 @@ class VupConsumer:
 
         log.info('step4:播放语音和动作')
         self.vup.mouth.speak(speech)
-        action_thread.join()
-        self.vup.body.action(self.vup.body.action_name)
+
+        if self.vup.body:
+            action_thread.join()
+            self.vup.body.action(self.vup.body.action_name)
 
         # step 存档
         cost_time = str(time.time() - t0)[:4]
@@ -126,8 +130,8 @@ class VupConsumer:
 
     def __call__(self):
         while True:
-            log.info('step0:收到生产者消息')
             event = live_queue.recv()
+            log.info('step0:收到生产者消息')
             try:
                 self.handle(event)
             except Exception as e:

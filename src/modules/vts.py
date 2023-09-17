@@ -6,6 +6,9 @@
 # @Desc    :
 import json
 import pathlib
+import time
+
+from bilibili_api import sync
 
 import config
 from utils import log
@@ -23,7 +26,11 @@ class VTSOperator:
         self.vts = vts
 
     @classmethod
-    async def init(cls):
+    def init(cls):
+        return sync(cls.__init())
+
+    @classmethod
+    async def __init(cls):
         try:
             import pyvts
         except ImportError:
@@ -56,10 +63,13 @@ class VTSOperator:
         except ImportError:
             raise 'Please run pip install pyvts'
         vts = pyvts.vts(plugin_info=plugin_info)
-        try:
-            await vts.connect()
-        except ConnectionRefusedError:
-            raise '请先打开VTS，并打开API开关！'
+        while 1:
+            try:
+                await vts.connect()
+                break
+            except Exception as e:
+                log.warning(f'未检测到VTS，请打开VTS，并开启API开关！{e}')
+                time.sleep(3)
         log.info('请在live2D VTS弹窗中点击确认！')
         await vts.request_authenticate_token()  # get token
         await vts.write_token()

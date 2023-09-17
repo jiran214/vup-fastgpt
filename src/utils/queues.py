@@ -25,7 +25,7 @@ class LiveQueue:
 
     def recv(self) -> Union[None, dict]:
         if self.high_event_queue.not_empty:
-            event = self.event_queue.get()
+            event = self.high_event_queue.get()
         elif not self.event_queue.empty():
             event = self.event_queue.get()
         else:
