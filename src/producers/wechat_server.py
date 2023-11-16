@@ -5,6 +5,7 @@
 # @File    : wechat_server.py
 # @Desc    : see https://github.com/smallnew666/ChatGPT-Virtual-Live/blob/main/wechat.py
 import time
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -49,7 +50,6 @@ class WeChatLiveRoom():
                 'domain': 'channels.weixin.qq.com',
                 'name': cookies.get('name'),
                 'value': cookies.get('value'),
-                # "expires": cookie.get('value'),
                 'path': '/',
                 'httpOnly': False,
                 'HostOnly': False,

@@ -8,3 +8,5 @@ pygame
 scipy==1.7.3
 pyvts
 schedule
+gradio==4.0.2
+streamlit

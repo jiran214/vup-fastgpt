@@ -6,12 +6,7 @@
 # @Desc    :
 import asyncio
 
-import httpx
-from bilibili_api import sync
-from bilibili_api.utils import network
 from bilibili_api.utils.credential import Credential
-
-import config
 from utils import enums, live_queue
 
 
@@ -59,9 +54,6 @@ class BlLiveRoom:
             from bilibili_api import live, sync
         except ImportError:
             raise 'Please run pip install bilibili-api-python'
-
-        from bilibili_api import settings
-        # settings.proxy = config.proxy
 
         credential = Credential(**credential_params)
         self.room = live.LiveDanmaku(

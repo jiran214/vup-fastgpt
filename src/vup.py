@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2023/9/12 11:06
-# @Author  : 雷雨
-# @File    : brain.py
-# @Desc    :
 import time
 
 from bilibili_api import sync
