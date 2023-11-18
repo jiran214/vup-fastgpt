@@ -1,19 +1,18 @@
 {
-  "base": {
-    "proxy": "http://127.0.0.1:7890",
-    "openai_key_list": [
-      "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"
-    ]
-  },
-  "gpt": {
-    "temperature": 0.7,
-    "openai_api_base": null,
-    "max_retries": 2,
-    "max_tokens": 200,
-    "openai_organization": null,
-    "model_name": "gpt-3.5-turbo"
-  },
-  "prompt": {
-    "system": null
-  }
+    "base": {
+        "proxy": "http://127.0.0.1:7890",
+        "base_url": "http://ai.newhopedairy.cn/api/openapi",
+        "openai_key": "6558fcbced049c3059f0e1d8-fastgpt-tsm3gqsbyljbf4k0bh762yps"
+    },
+    "gpt": {
+        "temperature": 0.6,
+        "openai_api_base": null,
+        "max_retries": 1,
+        "max_tokens": 300,
+        "openai_organization": null,
+        "model_name": "gpt-3.5-turbo"
+    },
+    "prompt": {
+        "system": null
+    }
 }

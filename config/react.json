@@ -1,7 +1,10 @@
 {
-  "tts": {
-      "voice": "zh-CN-XiaoyiNeural",
-      "rate": "+0%",
-      "volume": "+0%"
-  }
+    "tts": {
+        "voice": "zh-CN-XiaoyiNeural",
+        "rate": "+0%",
+        "volume": "+0%"
+    },
+    "vts": {
+        "actions": []
+    }
 }

@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 
+import bilibili_api.settings
 import openai
 
 # 基础配置
@@ -20,21 +21,27 @@ config_path = root.parent / 'config'
 
 
 # 文件配置读取
-react_params = json.loads(open(file=config_path / 'react.json', mode='r').read())
-llm_params = json.loads(open(file=config_path / 'llm.json', mode='r').read())
-live_params = json.loads(open(file=config_path / 'live_server.json', encoding='utf-8', mode='r').read())
-scheduler_params = json.loads(open(file=config_path / 'scheduler.json', encoding='utf-8', mode='r').read())
-filter_words = [line.strip() for line in open(file=config_path / 'filter_words.txt', encoding='utf-8', mode='r').readlines()]
+class Settings:
+    def __init__(self):
+        self.react_params = json.loads(open(file=config_path / 'react.json', mode='r').read())
+        self.llm_params = json.loads(open(file=config_path / 'llm.json', mode='r').read())
+        self.live_params = json.loads(open(file=config_path / 'live_server.json', encoding='utf-8', mode='r').read())
+        self.scheduler_params = json.loads(open(file=config_path / 'scheduler.json', encoding='utf-8', mode='r').read())
+        self.filter_words = [line.strip() for line in open(file=config_path / 'filter_words.txt', encoding='utf-8', mode='r').readlines()]
+        self.proxy = self.llm_params['base']['proxy'] or None  # eg: http://127.0.0.1:7890
+        self.openai_key = self.llm_params['base']['openai_key']
+        if self.proxy:
+            os.environ['HTTPS_PORXY'] = self.proxy
+            os.environ['HTTP_PORXY'] = self.proxy
+            openai.proxy = self.proxy
+            bilibili_api.settings.proxy = self.proxy
+
+    def flush(self):
+        self.__init__()
 
 
 # 初始化配置
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = ''
-proxy = llm_params['base']['proxy']  # eg: http://127.0.0.1:7890
-openai_key_list = llm_params['base']['openai_key_list']
-if proxy:
-    os.environ['HTTPS_PORXY'] = proxy
-    os.environ['HTTP_PORXY'] = proxy
-    openai.proxy = proxy
 
 
 # 功能选项
