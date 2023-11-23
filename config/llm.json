@@ -1,15 +1,14 @@
 {
     "base": {
-        "proxy": "http://127.0.0.1:7890",
-        "base_url": "http://ai.newhopedairy.cn/api/openapi",
-        "openai_key": "6558fcbced049c3059f0e1d8-fastgpt-tsm3gqsbyljbf4k0bh762yps"
+        "proxy": null,
+        "base_url": "http://ai.newhopedairy.cn/api/openapi/v1",
+        "openai_key": "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",
+        "fastgpt_key": "fastgpt-tsm3gqsbyljbf4k0bh762yps-6558fcbced049c3059f0e1d8"
     },
     "gpt": {
         "temperature": 0.6,
-        "openai_api_base": null,
         "max_retries": 1,
         "max_tokens": 300,
-        "openai_organization": null,
         "model_name": "gpt-3.5-turbo"
     },
     "prompt": {

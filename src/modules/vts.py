@@ -6,18 +6,49 @@
 # @Desc    :
 import json
 import pathlib
+import re
 import time
 
 from bilibili_api import sync
 
 import config
+from modules.llm import Embedding
 from utils import log
 
 plugin_info = {
     "plugin_name": "start pyvts",
-    "developer": "Me",
+    "developer": "黑小优",
     "authentication_token_path": str(config.config_path / 'token.txt')
 }
+
+
+def get_actions():
+    action_list = []
+    dir_path = pathlib.Path("C:/Users/jiran/Desktop/黑小优(1)/黑小优")
+    for file in dir_path.iterdir():
+        if 'exp3.json' in str(file):
+            action = json.load(
+                fp=open(file=file, mode='r')
+            )['Parameters']
+            action_id = action[0]['Id']
+            action_name = re.search('(.*).exp3.json', file.name).group(1)
+            action_list.append({
+                'name': action_name,
+                'id': action_id,
+                'embedding': None
+            })
+    filename = str(config.config_path / 'action.json')
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(action_list, f, ensure_ascii=True, indent=4)
+
+
+def embed():
+    filename = str(config.config_path / 'action.json')
+    actions = json.load(fp=open(file=filename, mode='r', encoding='utf-8'))
+    for action in actions:
+        action['embedding'] = Embedding.embed_query(action['name'])
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(actions, f, ensure_ascii=False, indent=4)
 
 
 class VTSOperator:
@@ -37,7 +68,7 @@ class VTSOperator:
             raise 'Please run pip install pyvts'
         if not pathlib.Path(plugin_info['authentication_token_path']).exists():
             log.info('首次运行，按照提示获取vts令牌')
-            return cls.get_token()
+            return await cls.get_token()
         vts = pyvts.vts(plugin_info=plugin_info)
         await vts.connect()
         await vts.read_token()
@@ -45,7 +76,8 @@ class VTSOperator:
         response_data = await vts.request(vts.vts_request.requestHotKeyList())
         hotkey_list = []
         for hotkey in response_data['data']['availableHotkeys']:
-            hotkey_list.append(hotkey['name'])
+            if hotkey['name']:
+                hotkey_list.append(hotkey['name'])
         log.info(f'vts连接完成-动作:{hotkey_list}')
         return cls(hotkey_list, vts)
 
@@ -81,3 +113,13 @@ class VTSOperator:
             hotkey_list.append(hotkey['name'])
         log.info('读取到所有模型动作:', hotkey_list)
         return cls(hotkey_list, vts)
+
+
+if __name__ == '__main__':
+    # get_actions()
+    # embed()
+    # vts = VTSOperator.init()
+    actions = ['24小时', '今日', '喝牛奶', '打招呼', '抱牛', '拿牛奶', '换衣服', '文件', '无语', '无辜', '星星眼', '有机', '比心', '活润', '生气', '给牛奶', '脸红', '阴暗', '', '', '']
+    # sync(vts.play_action('24小时'))
+    for action in actions:
+        print(action)

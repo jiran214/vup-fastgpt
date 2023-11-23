@@ -6,6 +6,7 @@
 # @Desc    :
 import sys
 
+import streamlit as st
 from loguru import logger
 import config
 
@@ -16,10 +17,10 @@ def get_loguru_logger(file_name):
 
     logfile = f'{file_name}.log'
 
-    # 添加控制台处理器
     if config.debug:
         logger.add(sys.stdout, level="DEBUG")
-    else:
         # 添加文件处理器
+    else:
+        logger.add(sys.stdout, level="INFO")
         logger.add(config.log_path / logfile, level="INFO", rotation='100 MB')
     return logger

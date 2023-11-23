@@ -1,9 +1,9 @@
 [
   {
     "name": "带货",
-    "frequency": "10",
-    "timing": "0:11",
-    "prompt": "生成一个推销新希望品牌牛奶的带货文案",
+    "frequency": null,
+    "timing": "18:53",
+    "prompt": "介绍你自己",
     "speech": "{gpt}"
   }
 ]

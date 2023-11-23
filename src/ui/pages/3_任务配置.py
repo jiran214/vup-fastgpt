@@ -1,10 +1,9 @@
 import pandas as pd
 import streamlit as st
-from ui import vup, widgets, utils
-from ui.vup import settings
 
-st.session_state.llm_params = vup.settings.llm_params
-st.session_state.react_params = vup.settings.react_params
+import config
+from ui import widgets, utils
+
 
 sche_map = {
     'name': '名称',
@@ -20,7 +19,7 @@ widgets.page_config('任务配置', """### 任务类型
 - 2.循环任务: 每隔多少时间做某件事
 - 3. prompt为空则数字人会说固定的话术，反之会请求GPT""")
 
-st.session_state.scheduler_params = settings.scheduler_params
+st.session_state.scheduler_params = config.settings.scheduler_params
 columns = list(sche_map.values())
 st.markdown('### 任务面板')
 data_df = pd.DataFrame(

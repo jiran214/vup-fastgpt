@@ -24,8 +24,8 @@ import config
 audio_lock = threading.Lock()
 
 
-tts_cfg = config.react_params['tts']
-tts_cfg['proxy'] = config.proxy
+tts_cfg = config.settings.react_params['tts']
+tts_cfg['proxy'] = config.settings.proxy
 
 
 async def tts_save(text):

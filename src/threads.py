@@ -4,6 +4,7 @@
 # @Author  : 雷雨
 # @File    : core.py
 # @Desc    :
+import threading
 import time
 
 import schedule
@@ -11,6 +12,7 @@ from bilibili_api import sync
 
 import config
 from producers.bilibili_server import BlLiveRoom
+from producers import wechat_server
 from modules.vts import VTSOperator
 from utils import live_queue, log
 import vup
@@ -23,16 +25,19 @@ from utils.utils import Record
 class LiveProducer:
 
     def __init__(self, platform, debug=False):
-        self.platform = platform
+        self.platform = platform.lower()
         self.debug = debug
 
     def __call__(self):
-        r = BlLiveRoom(
-            config.live_params[self.platform]['room_id'],
-            config.live_params[self.platform]['credential'],
-            debug=self.debug
-        )
-        r.connect()
+        if self.platform == 'bilbili':
+            r = BlLiveRoom(
+                config.settings.live_params[self.platform]['room_id'],
+                config.settings.live_params[self.platform]['credential'],
+                debug=self.debug
+            )
+            r.connect()
+        elif self.platform == 'wechat':
+            wechat_server.connect()
 
 
 class SchedulerProducer:
@@ -44,11 +49,11 @@ class SchedulerProducer:
     def create(self):
         # 清空任务
         schedule.clear()
-        if not config.scheduler_params:
+        if not config.settings.scheduler_params:
             log.error('未发现定时任务')
             return
-        for name, value in config.scheduler_params.items():
-            log.info(f'发现schedule调度任务-数量:{len(config.scheduler_params.keys())}-提前处理中,')
+        for value in config.settings.scheduler_params:
+            log.info(f'发现schedule调度任务-数量:{len(config.settings.scheduler_params)}-提前处理中,')
             event = {
                 "type": LiveInputType.scheduler,
                 **value
@@ -69,14 +74,14 @@ class SchedulerProducer:
 
 class VupConsumer:
 
-    dfa = DFA(config.filter_words)
-    log.debug(f"加载违禁词成功:数量{len(config.filter_words)}-预览：{str(config.filter_words[:10])}...")
+    dfa = DFA(config.settings.filter_words)
+    log.debug(f"加载违禁词成功:数量{len(config.settings.filter_words)}-预览：{str(config.settings.filter_words[:10])}...")
 
     def __init__(self, platform):
         assert platform in ('wechat', 'bilibili')
         self.vup = vup.VTuber()
         self.platform = platform
-        self.live_cfg = config.live_params[platform]
+        self.live_cfg = config.settings.live_params
 
     def handle(self, event):
         model_kwargs = {}
@@ -97,6 +102,11 @@ class VupConsumer:
         except Exception as e:
             log.error(f'模版构造错误 event:{event}')
             log.exception(e)
+            return
+
+        # step 违禁词过滤
+        if words := self.dfa.match(prompt):
+            log.warning(f'触发违禁词过滤-prompt:{prompt}-words:{words}')
             return
 
         log.info('step2:生成动作')
@@ -123,7 +133,7 @@ class VupConsumer:
             event=event,
             prompt=prompt,
             speech=speech,
-            action=self.vup.body.action_name,
+            action=self.vup.body and self.vup.body.action_name,
             time=cost_time
         )
         log.info(f'step end:{record}')
@@ -131,7 +141,7 @@ class VupConsumer:
     def __call__(self):
         while True:
             event = live_queue.recv()
-            log.info('step0:收到生产者消息')
+            log.info(f'step0:收到生产者消息:{event}')
             try:
                 self.handle(event)
             except Exception as e:

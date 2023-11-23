@@ -8,7 +8,6 @@ import json
 import os
 import pathlib
 
-import bilibili_api.settings
 import openai
 
 # 基础配置
@@ -23,6 +22,7 @@ config_path = root.parent / 'config'
 # 文件配置读取
 class Settings:
     def __init__(self):
+        print('init Settings...')
         self.react_params = json.loads(open(file=config_path / 'react.json', mode='r').read())
         self.llm_params = json.loads(open(file=config_path / 'llm.json', mode='r').read())
         self.live_params = json.loads(open(file=config_path / 'live_server.json', encoding='utf-8', mode='r').read())
@@ -34,15 +34,17 @@ class Settings:
             os.environ['HTTPS_PORXY'] = self.proxy
             os.environ['HTTP_PORXY'] = self.proxy
             openai.proxy = self.proxy
+            import bilibili_api.settings
             bilibili_api.settings.proxy = self.proxy
 
     def flush(self):
         self.__init__()
 
 
+settings = Settings()
+
 # 初始化配置
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = ''
 
-
 # 功能选项
-action = False
+action = True

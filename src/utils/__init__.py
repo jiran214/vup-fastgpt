@@ -4,7 +4,7 @@
 # @Author  : 雷雨
 # @File    : __init__.py.py
 # @Desc    :
-from src import get_loguru_logger
+from utils.logger import get_loguru_logger
 from utils.queues import LiveQueue
 
 log = get_loguru_logger('vup')

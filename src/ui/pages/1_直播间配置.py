@@ -30,17 +30,18 @@
 
 import streamlit as st
 import config
-from ui import widgets, utils, vup
+from ui import widgets, utils
 
-st.session_state.live_server = vup.settings.live_params
+st.session_state.live_server = config.settings.live_params
 
 widgets.page_config('直播间配置', '该页面为B站和视频号回复模板、房间号、认证信息配置')
 
 # 1
 st.markdown('## BiliBili服务器')
 room_id = st.number_input('房间号', value=int(st.session_state.live_server['bilibili']['room_id']), format='%d')
-st.markdown('### 账号认证参数')
-st.link_button("获取认证信息教程", "'https://nemo2011.github.io/bilibili-api/#/get-credential'")
+st.markdown('### 账号认证参数\n每隔一段时间会失效')
+
+st.link_button("浏览器获取认证信息教程", "'https://nemo2011.github.io/bilibili-api/#/get-credential'")
 credential_dict = widgets.text_input_group(st.session_state.live_server['bilibili']['credential'])
 st.session_state.live_server['bilibili'].update(
     room_id=room_id,
