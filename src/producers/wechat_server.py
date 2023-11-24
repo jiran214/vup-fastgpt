@@ -32,14 +32,15 @@ def run(p):
         username = selectors[-1].query_selector("//span[@class='message-username-desc']")
         role = selectors[-1].query_selector("//span[@class='message-type']")
         new_text = selectors[-1].query_selector("//span[@class='message-content']").inner_text()
+
+        username = username and username.inner_text() or "有人"
         if not new_text or new_text.startswith('欢迎'):
             print('暂无消息')
         elif new_text != last_text:
             last_text = new_text
             input_vars = {
                 'text': new_text,
-                'username': username and username.inner_text(),
-                'role': role and role.inner_text(),
+                # 'role': role and role.inner_text(),
                 'type': enums.LiveInputType.danmu
             }
             print(input_vars)

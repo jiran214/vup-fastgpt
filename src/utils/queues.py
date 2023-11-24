@@ -8,11 +8,17 @@ import queue
 import time
 from typing import Union
 
+from utils import enums
+
 
 class LiveQueue:
     def __init__(self, maxsize=15):
         self.event_queue = queue.Queue(maxsize)
         self.high_event_queue = queue.Queue()
+        self.send({
+            'text': 'new_text',
+            'type': enums.LiveInputType.danmu
+        }, is_high_event=True)
 
     def send(self, event: Union[dict, None], is_high_event=False):
         if is_high_event:

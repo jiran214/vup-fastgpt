@@ -95,26 +95,28 @@ class VupConsumer:
         else:
             # 弹幕服务器处理
             temple = self.live_cfg[event['type'].value]
-
         prompt_temple, speech_temple = temple['prompt'], temple['speech']
-        try:
-            prompt = prompt_temple.format(**event)
-        except Exception as e:
-            log.error(f'模版构造错误 event:{event}')
-            log.exception(e)
-            return
-
-        # step 违禁词过滤
-        if words := self.dfa.match(prompt):
-            log.warning(f'触发违禁词过滤-prompt:{prompt}-words:{words}')
-            return
+        # 是否请求GPT
+        output_text = None
+        prompt = None
+        if prompt_temple:
+            try:
+                prompt = prompt_temple.format(**event)
+            except Exception as e:
+                log.error(f'模版构造错误 event:{event}')
+                log.exception(e)
+                return
+            # step 违禁词过滤
+            if event['type'] != LiveInputType.scheduler and (words := self.dfa.match(prompt)):
+                log.warning(f'触发违禁词过滤-prompt:{prompt}-words:{words}')
+                return
+            log.info('step3:生成语音文本')
+            output_text = self.vup.brain.think(prompt, **model_kwargs)
 
         log.info('step2:生成动作')
-        action_thread = Thread(self.vup.body.feel(prompt)) if self.vup.body else None
+        action_thread = Thread(self.vup.body.feel(output_text)) if self.vup.body else None
 
-        log.info('step3:生成语音文本')
-        output_text = self.vup.brain.think(prompt, **model_kwargs)
-        speech = speech_temple.format(**event, gpt=output_text)
+        speech = speech_temple.format(**event, gpt=output_text) if output_text else speech_temple
         # step 违禁词过滤
         if words := self.dfa.match(speech):
             log.warning(f'触发违禁词过滤-speech:{speech}-words:{words}')
