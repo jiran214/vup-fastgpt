@@ -6,15 +6,12 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 
-from utils import log
 from ui import widgets
 import streamlit as st
 import apis
 
 
-# print(111, str(pathlib.Path(__file__).parent.parent))
 import config
-
 settings = config.settings
 
 style = "<style>h1, h2 {text-align: center;}</style>"
@@ -37,7 +34,7 @@ if cols[0].button(key='test', label='连接VTubeStudio', on_click=lambda: apis.g
 if cols[1].button(key='run_bilibili', label='启动Bilibili直播', on_click=lambda: apis.start('bilibili')):
     st.success(f'启动中')
 
-if cols[2].button(key='run_wechat', label='启动视频号直播', on_click=lambda: apis.start('wechat'), disabled=True):
+if cols[2].button(key='run_wechat', label='启动视频号直播', on_click=lambda: apis.start('wechat')):
     st.success(f'启动中，请在弹出的浏览器扫码登录视频号后台，扫码后将网页最小化，请勿有多余操作')
 
 if apis.p:

@@ -4,6 +4,7 @@
 # @Author  : 雷雨
 # @File    : vts.py
 # @Desc    :
+import asyncio
 import json
 import pathlib
 import re
@@ -14,6 +15,7 @@ from bilibili_api import sync
 import config
 from modules.llm import Embedding
 from utils import log
+from utils.concurrent import Thread
 
 plugin_info = {
     "plugin_name": "start pyvts",
@@ -52,13 +54,16 @@ def embed():
 
 
 class VTSOperator:
-    def __init__(self, live2D_actions, vts):
-        self.live2D_actions = live2D_actions
-        self.vts = vts
 
     @classmethod
-    def init(cls):
-        return sync(cls.__init())
+    def init(cls, close=False):
+        loop = asyncio.get_event_loop()
+        vts, hotkey_list = loop.run_until_complete(cls.__init())
+        if close:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(vts.close())
+        else:
+            return vts, hotkey_list
 
     @classmethod
     async def __init(cls):
@@ -75,18 +80,22 @@ class VTSOperator:
         await vts.request_authenticate()  # use token
         response_data = await vts.request(vts.vts_request.requestHotKeyList())
         hotkey_list = []
+        if 'errorID' in response_data['data']:
+            return await cls.get_token()
         for hotkey in response_data['data']['availableHotkeys']:
             if hotkey['name']:
                 hotkey_list.append(hotkey['name'])
         log.info(f'vts连接完成-动作:{hotkey_list}')
-        return cls(hotkey_list, vts)
+        return vts, hotkey_list
 
-    async def play_action(self, action_name: str):
-        if action_name not in self.live2D_actions:
+    async def _aplay_action(self, action_name: str):
+        vts, hotkey_list = await self.__init()
+        if action_name not in hotkey_list:
             raise ValueError(f'动作不存在：{action_name}')
-        send_hotkey_request = self.vts.vts_request.requestTriggerHotKey(action_name)
-        await self.vts.request(send_hotkey_request)
-        await self.vts.close()
+        send_hotkey_request = vts.vts_request.requestTriggerHotKey(action_name)
+        await vts.request(send_hotkey_request)
+        await vts.close()
+
 
     @classmethod
     async def get_token(cls):
@@ -110,16 +119,17 @@ class VTSOperator:
         response_data = await vts.request(vts.vts_request.requestHotKeyList())
         hotkey_list = []
         for hotkey in response_data['data']['availableHotkeys']:
-            hotkey_list.append(hotkey['name'])
-        log.info('读取到所有模型动作:', hotkey_list)
-        return cls(hotkey_list, vts)
+            if hotkey['name']:
+                hotkey_list.append(hotkey['name'])
+        log.info(f'vts连接完成-动作:{hotkey_list}')
+        return vts, hotkey_list
 
 
 if __name__ == '__main__':
     # get_actions()
     # embed()
-    # vts = VTSOperator.init()
-    actions = ['24小时', '今日', '喝牛奶', '打招呼', '抱牛', '拿牛奶', '换衣服', '文件', '无语', '无辜', '星星眼', '有机', '比心', '活润', '生气', '给牛奶', '脸红', '阴暗', '', '', '']
-    # sync(vts.play_action('24小时'))
-    for action in actions:
-        print(action)
+    vts = VTSOperator.init()
+    # actions = ['24小时', '今日', '喝牛奶', '打招呼', '抱牛', '拿牛奶', '换衣服', '文件', '无语', '无辜', '星星眼', '有机', '比心', '活润', '生气', '给牛奶', '脸红', '阴暗', '', '', '']
+    # t = Thread(sync(vts._aplay_action(actions[3])))
+    # t = Thread(vts.play_action, '打招呼aa')
+    # t.join()

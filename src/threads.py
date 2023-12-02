@@ -4,18 +4,14 @@
 # @Author  : 雷雨
 # @File    : core.py
 # @Desc    :
+import asyncio
 import threading
 import time
 
 import schedule
-from bilibili_api import sync
-
 import config
-from producers.bilibili_server import BlLiveRoom
 from producers import wechat_server
-from modules.vts import VTSOperator
 from utils import live_queue, log
-import vup
 from utils.concurrent import Thread
 from utils.enums import LiveInputType
 from utils.filter import DFA
@@ -29,7 +25,8 @@ class LiveProducer:
         self.debug = debug
 
     def __call__(self):
-        if self.platform == 'bilbili':
+        if self.platform == 'bilibili':
+            from producers.bilibili_server import BlLiveRoom
             r = BlLiveRoom(
                 config.settings.live_params[self.platform]['room_id'],
                 config.settings.live_params[self.platform]['credential'],
@@ -41,14 +38,15 @@ class LiveProducer:
 
 
 class SchedulerProducer:
-    wait_seconds = 10
+    wait_seconds = 30
 
     def __init__(self):
-        self.scheduler = self.create()
+        self.scheduler = schedule
+        self.create()
 
     def create(self):
         # 清空任务
-        schedule.clear()
+        self.scheduler.clear()
         if not config.settings.scheduler_params:
             log.error('未发现定时任务')
             return
@@ -59,31 +57,35 @@ class SchedulerProducer:
                 **value
             }
             if frequency := value.get('frequency'):
-                schedule.every(int(frequency)).seconds.do(lambda: live_queue.send(event, True))
+                self.scheduler.every(int(frequency)).seconds.do(live_queue.send, event, True)
+                self.scheduler.every(int(frequency)).seconds.do(print, 'test')
             elif timing := value.get('timing'):
-                schedule.every().day.at(timing).do(lambda: live_queue.send(event, True))
+                self.scheduler.every().day.at(timing).do(live_queue.send, event, True)
         log.info(f'调度事件创建完毕:{schedule.jobs}')
-        return schedule
 
     def __call__(self, *args, **kwargs):
         # 延时启动
         assert self.scheduler
         time.sleep(self.wait_seconds)
-        self.scheduler.run_pending()
+        while True:
+            self.scheduler.run_pending()
+            time.sleep(1)
 
 
 class VupConsumer:
 
     dfa = DFA(config.settings.filter_words)
+    vup_lock = threading.Lock()
     log.debug(f"加载违禁词成功:数量{len(config.settings.filter_words)}-预览：{str(config.settings.filter_words[:10])}...")
 
     def __init__(self, platform):
+        import vup
         assert platform in ('wechat', 'bilibili')
         self.vup = vup.VTuber()
         self.platform = platform
         self.live_cfg = config.settings.live_params
 
-    def handle(self, event):
+    async def ahandle(self, event):
         model_kwargs = {}
         # step 生成gpt文本
         log.info('step1:生成prompt')
@@ -94,40 +96,44 @@ class VupConsumer:
             model_kwargs = {'max_tokens': None}
         else:
             # 弹幕服务器处理
-            temple = self.live_cfg[event['type'].value]
+            temple = self.live_cfg['temple'][event['type'].value]
+
         prompt_temple, speech_temple = temple['prompt'], temple['speech']
-        # 是否请求GPT
-        output_text = None
-        prompt = None
-        if prompt_temple:
-            try:
-                prompt = prompt_temple.format(**event)
-            except Exception as e:
-                log.error(f'模版构造错误 event:{event}')
-                log.exception(e)
-                return
+        try:
+            prompt = prompt_temple.format(**event)
+        except Exception as e:
+            log.error(f'模版构造错误 event:{event}')
+            log.exception(e)
+            return
+
+        if '{gpt}' in speech_temple or '':
             # step 违禁词过滤
-            if event['type'] != LiveInputType.scheduler and (words := self.dfa.match(prompt)):
+            if words := self.dfa.match(prompt):
                 log.warning(f'触发违禁词过滤-prompt:{prompt}-words:{words}')
                 return
+
+            log.info('step2:生成动作')
+            action_thread = Thread(self.vup.body.feel(prompt)) if self.vup.body else None
+
             log.info('step3:生成语音文本')
             output_text = self.vup.brain.think(prompt, **model_kwargs)
+            speech = speech_temple.format(**event, gpt=output_text)
+        else:
+            action_thread = Thread(self.vup.body.feel(speech_temple)) if self.vup.body else None
+            speech = speech_temple.format(**event)
 
-        log.info('step2:生成动作')
-        action_thread = Thread(self.vup.body.feel(output_text)) if self.vup.body else None
-
-        speech = speech_temple.format(**event, gpt=output_text) if output_text else speech_temple
         # step 违禁词过滤
         if words := self.dfa.match(speech):
             log.warning(f'触发违禁词过滤-speech:{speech}-words:{words}')
             return
 
-        log.info('step4:播放语音和动作')
-        self.vup.mouth.speak(speech)
-
-        if self.vup.body:
-            action_thread.join()
-            self.vup.body.action(self.vup.body.action_name)
+        tasks = []
+        with self.vup_lock:
+            tasks.append(asyncio.create_task(self.vup.mouth.speak(speech)))
+            if self.vup.body:
+                action_thread.join()
+                tasks.append(asyncio.create_task(self.vup.body.action(self.vup.body.action_name)))
+            await asyncio.gather(*tasks)
 
         # step 存档
         cost_time = str(time.time() - t0)[:4]
@@ -140,14 +146,24 @@ class VupConsumer:
         )
         log.info(f'step end:{record}')
 
-    def __call__(self):
+    async def run(self):
         while True:
             event = live_queue.recv()
+            if not event:
+                await asyncio.sleep(1)
+                continue
             log.info(f'step0:收到生产者消息:{event}')
             try:
-                self.handle(event)
+                await self.ahandle(event)
             except Exception as e:
                 raise e
                 # log.error(e)
 
+    def __call__(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self.run())
 
+
+if __name__ == '__main__':
+    LiveProducer('wechat')()

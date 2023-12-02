@@ -6,6 +6,7 @@
 # @Desc    :
 import asyncio
 
+
 from bilibili_api.utils.credential import Credential
 from utils import enums, live_queue
 
@@ -66,7 +67,7 @@ class BlLiveRoom:
     def add_event_listeners(self):
         listener_map = {
             'DANMU_MSG': on_danmaku,
-            'SEND_GIFT': on_gift,
+            # 'SEND_GIFT': on_gift,
             'SUPER_CHAT_MESSAGE': on_super_chat,
             # 'INTERACT_WORD': None
         }

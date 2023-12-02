@@ -1,6 +1,3 @@
-chcp 65001
-@echo off
-call activate
-call conda activate 环境名
-streamlit run 文件名.py
-Pause
+set root= D:\project\gpt\vup-fastgpt
+call %root%/venv/Scripts/activate
+call streamlit run %root%/src/ui/vup.py
