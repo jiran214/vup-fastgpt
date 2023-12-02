@@ -49,24 +49,27 @@ edited_df = st.data_editor(
             sche_map['speech'],
             help="回复模板"
         ),
-    }
+    },
+    num_rows="dynamic"
 )
+
+
 st.session_state.scheduler_params = edited_df.to_dict(orient='records')
 widgets.save_button(key='sche', on_click=lambda: (
     utils.write_json('scheduler.json', data=st.session_state.scheduler_params)
 ), label='保存任务')
-
-st.markdown('### 添加新任务')
-col1, col2, col3 = st.columns(3)
-task = {
-    'name': col1.text_input('名称'),
-    'frequency': col2.text_input('循环频率(分钟)'),
-    'timing': col3.text_input('定时时间'),
-    'prompt': st.text_area('prompt'),
-    'speech': st.text_input('回复模板'),
-    'switch': True,
-}
-widgets.save_button(key='add', on_click=lambda: (
-    st.session_state.scheduler_params.append(task),
-    utils.write_json('scheduler.json', data=st.session_state.scheduler_params)
-), label='添加任务')
+#
+# st.markdown('### 添加新任务')
+# col1, col2, col3 = st.columns(3)
+# task = {
+#     'name': col1.text_input('名称'),
+#     'frequency': col2.text_input('循环频率(分钟)'),
+#     'timing': col3.text_input('定时时间'),
+#     'prompt': st.text_area('prompt'),
+#     'speech': st.text_input('回复模板'),
+#     'switch': True,
+# }
+# widgets.save_button(key='add', on_click=lambda: (
+#     st.session_state.scheduler_params.append(task),
+#     utils.write_json('scheduler.json', data=st.session_state.scheduler_params)
+# ), label='添加任务')

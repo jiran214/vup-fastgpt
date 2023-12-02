@@ -8,33 +8,28 @@ import queue
 import time
 from typing import Union
 
-from utils import enums
-
 
 class LiveQueue:
     def __init__(self, maxsize=15):
         self.event_queue = queue.Queue(maxsize)
         self.high_event_queue = queue.Queue()
-        self.send({
-            'text': 'new_text',
-            'type': enums.LiveInputType.danmu
-        }, is_high_event=True)
 
     def send(self, event: Union[dict, None], is_high_event=False):
         if is_high_event:
-            self.high_event_queue.put_nowait(event)
+            self.high_event_queue.put(event)
         else:
             if not self.event_queue.full():
                 self.event_queue.put_nowait(event)
             else:
+                self.event_queue.get()
                 self.event_queue.put(event)
 
     def recv(self) -> Union[None, dict]:
-        if self.high_event_queue.not_empty:
+        # print('len', self.event_queue.qsize(), self.high_event_queue.qsize())
+        if not self.high_event_queue.empty():
             event = self.high_event_queue.get()
         elif not self.event_queue.empty():
             event = self.event_queue.get()
         else:
-            time.sleep(1)
-            return self.recv()
+            event = None
         return event

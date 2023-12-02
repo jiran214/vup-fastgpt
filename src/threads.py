@@ -50,15 +50,16 @@ class SchedulerProducer:
         if not config.settings.scheduler_params:
             log.error('未发现定时任务')
             return
+        log.info(f'发现schedule调度任务-数量:{len(config.settings.scheduler_params)}-提前处理中,')
         for value in config.settings.scheduler_params:
-            log.info(f'发现schedule调度任务-数量:{len(config.settings.scheduler_params)}-提前处理中,')
+            if not value.get('switch'):
+                continue
             event = {
                 "type": LiveInputType.scheduler,
                 **value
             }
             if frequency := value.get('frequency'):
-                self.scheduler.every(int(frequency)).seconds.do(live_queue.send, event, True)
-                self.scheduler.every(int(frequency)).seconds.do(print, 'test')
+                self.scheduler.every(int(frequency)).minutes.do(live_queue.send, event, True)
             elif timing := value.get('timing'):
                 self.scheduler.every().day.at(timing).do(live_queue.send, event, True)
         log.info(f'调度事件创建完毕:{schedule.jobs}')
@@ -99,14 +100,14 @@ class VupConsumer:
             temple = self.live_cfg['temple'][event['type'].value]
 
         prompt_temple, speech_temple = temple['prompt'], temple['speech']
-        try:
-            prompt = prompt_temple.format(**event)
-        except Exception as e:
-            log.error(f'模版构造错误 event:{event}')
-            log.exception(e)
-            return
 
-        if '{gpt}' in speech_temple or '':
+        if prompt_temple:
+            try:
+                prompt = prompt_temple.format(**event)
+            except Exception as e:
+                log.error(f'模版构造错误 event:{event}')
+                log.exception(e)
+                return
             # step 违禁词过滤
             if words := self.dfa.match(prompt):
                 log.warning(f'触发违禁词过滤-prompt:{prompt}-words:{words}')
@@ -117,6 +118,7 @@ class VupConsumer:
 
             log.info('step3:生成语音文本')
             output_text = self.vup.brain.think(prompt, **model_kwargs)
+            speech_temple = speech_temple or '{gpt}'
             speech = speech_temple.format(**event, gpt=output_text)
         else:
             action_thread = Thread(self.vup.body.feel(speech_temple)) if self.vup.body else None

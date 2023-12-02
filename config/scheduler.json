@@ -1,9 +1,18 @@
 [
-  {
-    "name": "带货",
-    "frequency": null,
-    "timing": "18:53",
-    "prompt": "介绍你自己",
-    "speech": "{gpt}"
-  }
+    {
+        "name": "带货",
+        "frequency": null,
+        "timing": "19:08",
+        "prompt": "请推销新希望牛奶",
+        "speech": "{gpt}",
+        "switch": NaN
+    },
+    {
+        "name": "问候",
+        "frequency": "2",
+        "timing": "",
+        "prompt": "请向大家问好！",
+        "speech": "{gpt}",
+        "switch": true
+    }
 ]

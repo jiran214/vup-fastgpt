@@ -10,16 +10,14 @@ from multiprocessing import Process
 
 import config
 import threads
-from modules.vts import VTSOperator
-from ui.utils import st_capture
-from utils import log
 from utils.concurrent import Thread
-from typing import Literal, Optional
+from typing import Optional
 
 p: Optional[Process] = None
 
 
 def get_vts():
+    from modules.vts import VTSOperator
     VTSOperator.init()
 
 

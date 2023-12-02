@@ -85,7 +85,6 @@ class VTSOperator:
         for hotkey in response_data['data']['availableHotkeys']:
             if hotkey['name']:
                 hotkey_list.append(hotkey['name'])
-        log.info(f'vts连接完成-动作:{hotkey_list}')
         return vts, hotkey_list
 
     async def _aplay_action(self, action_name: str):
