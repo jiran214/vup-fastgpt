@@ -41,7 +41,7 @@ st.markdown('## BiliBili服务器')
 room_id = st.number_input('房间号', value=int(st.session_state.live_server['bilibili']['room_id']), format='%d')
 st.markdown('### 账号认证参数\n每隔一段时间会失效')
 
-st.link_button("浏览器获取认证信息教程", "'https://nemo2011.github.io/bilibili-api/#/get-credential'")
+st.link_button("浏览器获取认证信息教程", "https://nemo2011.github.io/bilibili-api/#/get-credential")
 credential_dict = widgets.text_input_group(st.session_state.live_server['bilibili']['credential'])
 st.session_state.live_server['bilibili'].update(
     room_id=room_id,

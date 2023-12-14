@@ -33,7 +33,6 @@ widgets.page_config('虚拟人配置', """### AI虚拟人配置 AI引擎(二选�
 - 1.fastgpt: 在fastgpt获取应用key
 - 2.openai: sk-开头的key""")
 
-st.write('修改（Prompt、知识库) 请到FastGPT')
 cols = st.columns(2)
 
 cols[0].write('修改（Prompt、知识库) 请到FastGPT')

@@ -14,5 +14,13 @@
         "prompt": "请向大家问好！",
         "speech": "{gpt}",
         "switch": true
+    },
+    {
+        "name": "介绍产品",
+        "frequency": null,
+        "timing": "20:00",
+        "prompt": null,
+        "speech": "新希望牛奶很好喝...",
+        "switch": true
     }
 ]

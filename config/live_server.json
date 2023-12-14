@@ -1,7 +1,11 @@
 {
     "bilibili": {
         "room_id": 5101111,
-        "credential": {}
+        "credential": {
+            "bili_jct": "",
+            "sessdata": "",
+            "buvid3": ""
+        }
     },
     "wechat": {},
     "temple": {
