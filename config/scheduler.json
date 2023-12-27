@@ -5,7 +5,7 @@
         "timing": "19:08",
         "prompt": "请推销新希望牛奶",
         "speech": "{gpt}",
-        "switch": NaN
+        "switch": false
     },
     {
         "name": "问候",

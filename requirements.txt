@@ -8,4 +8,5 @@ pygame
 scipy==1.7.3
 pyvts
 schedule
-streamlit
+streamlit==1.28.2
+playwright

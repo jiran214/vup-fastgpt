@@ -1,3 +1,2 @@
-set root= D:\project\gpt\vup-fastgpt
-call %root%/venv/Scripts/activate
-call streamlit run %root%/src/ui/vup.py
+set root= .
+call %root%\python\python.exe -m streamlit run %root%/src/ui/vup.py
