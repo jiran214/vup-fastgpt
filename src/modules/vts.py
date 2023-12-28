@@ -56,14 +56,9 @@ def embed():
 class VTSOperator:
 
     @classmethod
-    def init(cls, close=False):
-        loop = asyncio.get_event_loop()
-        vts, hotkey_list = loop.run_until_complete(cls.__init())
-        if close:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(vts.close())
-        else:
-            return vts, hotkey_list
+    def init(cls):
+        vts, hotkey_list = sync(cls.__init())
+        return vts, hotkey_list
 
     @classmethod
     async def __init(cls):

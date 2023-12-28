@@ -8,6 +8,8 @@ import random
 import time
 from multiprocessing import Process
 
+from bilibili_api import sync
+
 import config
 import threads
 from utils.concurrent import Thread

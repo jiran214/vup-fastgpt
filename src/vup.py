@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import requests
-from bilibili_api import sync
 from langchain.schema import SystemMessage, HumanMessage
 
 import config
