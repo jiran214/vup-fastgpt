@@ -4,18 +4,15 @@
 # @Author  : 雷雨
 # @File    : vts.py
 # @Desc    :
-import asyncio
-import json
-import pathlib
-import re
 import time
 
+import pyvts
 from bilibili_api import sync
+import sys
+# sys.path.insert(0, 'D:/project/gpt/vup-fastgpt/src')
 
 import config
-from modules.llm import Embedding
 from utils import log
-from utils.concurrent import Thread
 
 plugin_info = {
     "plugin_name": "start pyvts",
@@ -24,106 +21,71 @@ plugin_info = {
 }
 
 
-def get_actions():
-    action_list = []
-    dir_path = pathlib.Path("C:/Users/jiran/Desktop/黑小优(1)/黑小优")
-    for file in dir_path.iterdir():
-        if 'exp3.json' in str(file):
-            action = json.load(
-                fp=open(file=file, mode='r')
-            )['Parameters']
-            action_id = action[0]['Id']
-            action_name = re.search('(.*).exp3.json', file.name).group(1)
-            action_list.append({
-                'name': action_name,
-                'id': action_id,
-                'embedding': None
-            })
-    filename = str(config.config_path / 'action.json')
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(action_list, f, ensure_ascii=True, indent=4)
-
-
-def embed():
-    filename = str(config.config_path / 'action.json')
-    actions = json.load(fp=open(file=filename, mode='r', encoding='utf-8'))
-    for action in actions:
-        action['embedding'] = Embedding.embed_query(action['name'])
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(actions, f, ensure_ascii=False, indent=4)
-
-
 class VTSOperator:
 
-    @classmethod
-    def init(cls):
-        vts, hotkey_list = sync(cls.__init())
-        return vts, hotkey_list
+    def __init__(self):
+        self.hotkey_list = None
+        self.vts = None
 
     @classmethod
-    async def __init(cls):
-        try:
-            import pyvts
-        except ImportError:
-            raise 'Please run pip install pyvts'
-        if not pathlib.Path(plugin_info['authentication_token_path']).exists():
-            log.info('首次运行，按照提示获取vts令牌')
-            return await cls.get_token()
-        vts = pyvts.vts(plugin_info=plugin_info)
-        await vts.connect()
-        await vts.read_token()
-        await vts.request_authenticate()  # use token
-        response_data = await vts.request(vts.vts_request.requestHotKeyList())
-        hotkey_list = []
-        if 'errorID' in response_data['data']:
-            return await cls.get_token()
-        for hotkey in response_data['data']['availableHotkeys']:
-            if hotkey['name']:
-                hotkey_list.append(hotkey['name'])
-        return vts, hotkey_list
+    async def init(cls):
+        instance = cls()
+        await instance.ainit()
+        return instance
 
-    async def _aplay_action(self, action_name: str):
-        vts, hotkey_list = await self.__init()
-        if action_name not in hotkey_list:
-            raise ValueError(f'动作不存在：{action_name}')
-        send_hotkey_request = vts.vts_request.requestTriggerHotKey(action_name)
-        await vts.request(send_hotkey_request)
-        await vts.close()
-
-
-    @classmethod
-    async def get_token(cls):
+    async def ainit(self):
         try:
             import pyvts
         except ImportError:
             raise 'Please run pip install pyvts'
         vts = pyvts.vts(plugin_info=plugin_info)
+        log.info('请在live2D VTS弹窗中点击确认！')
         while 1:
             try:
                 await vts.connect()
+                await vts.request_authenticate_token()  # get token
+                assert await vts.request_authenticate()  # use token
                 break
             except Exception as e:
-                log.warning(f'未检测到VTS，请打开VTS，并开启API开关！{e}')
+                log.warning(f'未检测到VTS连接，请打开VTS，并开启API开关！{e}')
                 time.sleep(3)
-        log.info('请在live2D VTS弹窗中点击确认！')
-        await vts.request_authenticate_token()  # get token
         await vts.write_token()
-        await vts.request_authenticate()  # use token
+        self.vts = vts
+        self.hotkey_list = await self.get_hotkey_list()
+        assert self.hotkey_list, '获取模型动作失败'
 
-        response_data = await vts.request(vts.vts_request.requestHotKeyList())
+    async def reconnect(self):
+        log.info('恢复VTS连接中')
+        vts = pyvts.vts(plugin_info=plugin_info)
+        await vts.connect()
+        await vts.read_token()
+        assert await vts.request_authenticate()
+        self.vts = vts
+
+    async def _aplay_action(self, action_name: str):
+        if action_name not in self.hotkey_list:
+            raise ValueError(f'动作不存在：{action_name}')
+        send_hotkey_request = self.vts.vts_request.requestTriggerHotKey(action_name)
+        await self.vts.request(send_hotkey_request)
+
+    async def get_hotkey_list(self):
+        response_data = await self.vts.request(self.vts.vts_request.requestHotKeyList())
         hotkey_list = []
         for hotkey in response_data['data']['availableHotkeys']:
             if hotkey['name']:
                 hotkey_list.append(hotkey['name'])
         log.info(f'vts连接完成-动作:{hotkey_list}')
-        return vts, hotkey_list
+        return hotkey_list
+
+
+async def test_vts():
+    vts_opt = VTSOperator()
+    await vts_opt.ainit()
+    for _ in range(30):
+        await vts_opt._aplay_action('喝牛奶')
+        time.sleep(4)
+        await vts_opt.vts.close()
 
 
 if __name__ == '__main__':
-    # get_actions()
-    # embed()
-    vts = VTSOperator.init()
-    # actions = ['24小时', '今日', '喝牛奶', '打招呼', '抱牛', '拿牛奶', '换衣服', '文件', '无语', '无辜', '星星眼', '有机', '比心', '活润', '生气', '给牛奶', '脸红', '阴暗', '', '', '']
-    # t = Thread(sync(vts._aplay_action(actions[3])))
-    # t = Thread(vts.play_action, '打招呼aa')
-    # t.join()
+    sync(test_vts())
