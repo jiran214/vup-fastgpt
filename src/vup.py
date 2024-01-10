@@ -3,6 +3,7 @@
 import requests
 from langchain.schema import SystemMessage, HumanMessage
 
+import src
 import config
 from utils import log
 from modules import tts, llm
@@ -30,16 +31,14 @@ class Mouth:
 class Body:
 
     def __init__(self):
-        vts_opt = VTSOperator()
         # self.live2D_embeddings = llm.Embedding.embed_documents(texts=vts_opt.live2D_actions)
-        self.vts_opt = vts_opt
+        self.vts_opt = VTSOperator()
         self.s = requests.Session()
         self.s.headers = {
             'Authorization': 'Bearer fastgpt-tsm3gqsbyljbf4k0bh762yps-6559dcc0ed049c3059f0e304'
         }
         self.action_name = None
-        # self.loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(self.loop)
+
 
     def feel(self, input_text):
         url = 'http://ai.newhopedairy.cn/api/openapi/kb/searchTest'
@@ -58,10 +57,17 @@ class Body:
         if not action_name:
             action_name = None
             return
-        # 等待1秒再做动作
-        # await asyncio.sleep(1)
-        await self.vts_opt._aplay_action(action_name)
-
+        times = 0
+        while 1:
+            try:
+                await self.vts_opt._aplay_action(action_name)
+                break
+            except Exception as e:
+                times += 1
+                if times > 3:
+                    log.error('重连过多,VTS连接丢失')
+                    raise e
+                await self.vts_opt.reconnect()
 
 class VTuber:
     def __init__(self):

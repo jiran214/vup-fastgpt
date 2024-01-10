@@ -27,10 +27,7 @@ str_output = st.empty()
 
 cols = st.columns(4)
 
-st.write('连接VTS运行一次即可,请打开VTS APis开关,等待并接受token!')
-if cols[0].button(key='test', label='连接VTubeStudio', on_click=lambda: apis.get_vts(), help='执行一次即可'):
-    st.success(f'连接VTubeStudio成功')
-
+st.write('请打开VTS APis开关,开播后在VTS弹出框点击确认连接')
 if cols[1].button(key='run_bilibili', label='启动Bilibili直播', on_click=lambda: apis.start('bilibili')):
     st.success(f'启动中')
 

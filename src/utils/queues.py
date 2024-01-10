@@ -25,7 +25,6 @@ class LiveQueue:
                 self.event_queue.put(event)
 
     def recv(self) -> Union[None, dict]:
-        # print('len', self.event_queue.qsize(), self.high_event_queue.qsize())
         if not self.high_event_queue.empty():
             event = self.high_event_queue.get()
         elif not self.event_queue.empty():

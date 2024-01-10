@@ -74,10 +74,7 @@ class SchedulerProducer:
 
 
 class VupConsumer:
-
-    dfa = DFA(config.settings.filter_words)
     vup_lock = threading.Lock()
-    log.debug(f"加载违禁词成功:数量{len(config.settings.filter_words)}-预览：{str(config.settings.filter_words[:10])}...")
 
     def __init__(self, platform):
         import vup
@@ -85,6 +82,8 @@ class VupConsumer:
         self.vup = vup.VTuber()
         self.platform = platform
         self.live_cfg = config.settings.live_params
+        self.dfa = DFA(config.settings.filter_words)
+        log.debug(f"加载违禁词成功:数量{len(config.settings.filter_words)}-预览：{str(config.settings.filter_words[:10])}...")
 
     async def ahandle(self, event):
         model_kwargs = {}
@@ -100,7 +99,7 @@ class VupConsumer:
             temple = self.live_cfg['temple'][event['type'].value]
 
         prompt_temple, speech_temple = temple['prompt'], temple['speech']
-
+        prompt = None
         if prompt_temple:
             try:
                 prompt = prompt_temple.format(**event)
@@ -130,11 +129,10 @@ class VupConsumer:
             return
 
         tasks = []
+        tasks.append(asyncio.create_task(self.vup.mouth.speak(speech)))
+        action_thread.join()
+        tasks.append(asyncio.create_task(self.vup.body.action(self.vup.body.action_name)))
         with self.vup_lock:
-            tasks.append(asyncio.create_task(self.vup.mouth.speak(speech)))
-            if self.vup.body:
-                action_thread.join()
-                tasks.append(asyncio.create_task(self.vup.body.action(self.vup.body.action_name)))
             await asyncio.gather(*tasks)
 
         # step 存档
@@ -149,6 +147,7 @@ class VupConsumer:
         log.info(f'step end:{record}')
 
     async def run(self):
+        await self.vup.body.vts_opt.ainit()
         while True:
             event = live_queue.recv()
             if not event:
@@ -158,8 +157,8 @@ class VupConsumer:
             try:
                 await self.ahandle(event)
             except Exception as e:
+                log.error('弹幕回复异常！')
                 raise e
-                # log.error(e)
 
     def __call__(self):
         loop = asyncio.new_event_loop()

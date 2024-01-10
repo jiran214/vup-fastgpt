@@ -30,7 +30,7 @@ def run(p):
     except Exception as e:
         log.warning('未检测到开播，请重新允许，请开启直播再启动程序')
     while True:  # 无限循环，伪监听
-        time.sleep(1.5)
+        time.sleep(2)
         selectors = page.query_selector_all("//div[@class='live-message-item']")
         if not selectors:
             continue
@@ -48,8 +48,8 @@ def run(p):
                 'role': role and role.inner_text(),
                 'type': enums.LiveInputType.danmu
             }
-            print(input_vars)
             live_queue.send(input_vars)
+            print(input_vars)
 
 
 def connect():
