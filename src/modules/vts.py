@@ -5,6 +5,7 @@
 # @File    : vts.py
 # @Desc    :
 import time
+from typing import Optional
 
 import pyvts
 from bilibili_api import sync
@@ -24,8 +25,12 @@ plugin_info = {
 class VTSOperator:
 
     def __init__(self):
+        try:
+            import pyvts
+        except ImportError:
+            raise 'Please run pip install pyvts'
         self.hotkey_list = None
-        self.vts = None
+        self.vts: Optional[pyvts.vts] = pyvts.vts(plugin_info=plugin_info)
 
     @classmethod
     async def init(cls):
@@ -34,39 +39,31 @@ class VTSOperator:
         return instance
 
     async def ainit(self):
-        try:
-            import pyvts
-        except ImportError:
-            raise 'Please run pip install pyvts'
-        vts = pyvts.vts(plugin_info=plugin_info)
         log.info('请在live2D VTS弹窗中点击确认！')
         while 1:
             try:
-                await vts.connect()
-                await vts.request_authenticate_token()  # get token
-                assert await vts.request_authenticate()  # use token
+                await self.vts.connect()
+                await self.vts.request_authenticate_token()  # get token
+                assert await self.vts.request_authenticate()  # use token
                 break
             except Exception as e:
                 log.warning(f'未检测到VTS连接，请打开VTS，并开启API开关！{e}')
                 time.sleep(3)
-        await vts.write_token()
-        self.vts = vts
+        await self.vts.write_token()
         self.hotkey_list = await self.get_hotkey_list()
         assert self.hotkey_list, '获取模型动作失败'
-
-    async def reconnect(self):
-        log.info('恢复VTS连接中')
-        vts = pyvts.vts(plugin_info=plugin_info)
-        await vts.connect()
-        await vts.read_token()
-        assert await vts.request_authenticate()
-        self.vts = vts
+        await self.vts.close()
 
     async def _aplay_action(self, action_name: str):
+        await self.vts.connect()
         if action_name not in self.hotkey_list:
             raise ValueError(f'动作不存在：{action_name}')
         send_hotkey_request = self.vts.vts_request.requestTriggerHotKey(action_name)
         await self.vts.request(send_hotkey_request)
+        await self.vts.close()
+
+    async def reconnect(self):
+        pass
 
     async def get_hotkey_list(self):
         response_data = await self.vts.request(self.vts.vts_request.requestHotKeyList())

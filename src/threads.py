@@ -83,6 +83,7 @@ class VupConsumer:
         self.platform = platform
         self.live_cfg = config.settings.live_params
         self.dfa = DFA(config.settings.filter_words)
+        self.error_times = 0
         log.debug(f"加载违禁词成功:数量{len(config.settings.filter_words)}-预览：{str(config.settings.filter_words[:10])}...")
 
     async def ahandle(self, event):
@@ -156,9 +157,13 @@ class VupConsumer:
             log.info(f'step0:收到生产者消息:{event}')
             try:
                 await self.ahandle(event)
+                self.error_times = 0
             except Exception as e:
-                log.error('弹幕回复异常！')
-                raise e
+                self.error_times += 1
+                if self.error_times > 3:
+                    log.error(f'程序失败次数过多')
+                    raise e
+                log.error(f'弹幕回复异常！{e}')
 
     def __call__(self):
         loop = asyncio.new_event_loop()
