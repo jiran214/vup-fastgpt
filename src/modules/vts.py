@@ -56,6 +56,7 @@ class VTSOperator:
 
     async def _aplay_action(self, action_name: str):
         await self.vts.connect()
+        await self.vts.request_authenticate()
         if action_name not in self.hotkey_list:
             raise ValueError(f'动作不存在：{action_name}')
         send_hotkey_request = self.vts.vts_request.requestTriggerHotKey(action_name)
