@@ -112,30 +112,21 @@ class VupConsumer:
             if words := self.dfa.match(prompt):
                 log.warning(f'触发违禁词过滤-prompt:{prompt}-words:{words}')
                 return
-
-            log.info('step2:生成动作')
-            action_thread = Thread(self.vup.body.feel(prompt)) if self.vup.body else None
-
-            log.info('step3:生成语音文本')
+            log.info('step2:生成语音文本')
             output_text = self.vup.brain.think(prompt, **model_kwargs)
             speech_temple = speech_temple or '{gpt}'
             speech = speech_temple.format(**event, gpt=output_text)
         else:
-            action_thread = Thread(self.vup.body.feel(speech_temple)) if self.vup.body else None
             speech = speech_temple.format(**event)
 
         # step 违禁词过滤
         if words := self.dfa.match(speech):
             log.warning(f'触发违禁词过滤-speech:{speech}-words:{words}')
             return
-
         tasks = []
         tasks.append(asyncio.create_task(self.vup.mouth.speak(speech)))
-        action_thread.join()
-        tasks.append(asyncio.create_task(self.vup.body.action(self.vup.body.action_name)))
-        with self.vup_lock:
-            await asyncio.gather(*tasks)
-
+        tasks.append(asyncio.create_task(self.vup.body.action(speech)))
+        await asyncio.gather(*tasks)
         # step 存档
         cost_time = str(time.time() - t0)[:4]
         record = Record(

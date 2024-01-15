@@ -4,6 +4,7 @@
 # @Author  : 雷雨
 # @File    : vts.py
 # @Desc    :
+import threading
 import time
 from typing import Optional
 
@@ -43,6 +44,7 @@ class VTSOperator:
         while 1:
             try:
                 await self.vts.connect()
+                assert self.vts.get_connection_status() == 1, '连接异常'
                 await self.vts.request_authenticate_token()  # get token
                 assert await self.vts.request_authenticate()  # use token
                 break
@@ -55,16 +57,21 @@ class VTSOperator:
         await self.vts.close()
 
     async def _aplay_action(self, action_name: str):
-        await self.vts.connect()
-        await self.vts.request_authenticate()
-        if action_name not in self.hotkey_list:
-            raise ValueError(f'动作不存在：{action_name}')
-        send_hotkey_request = self.vts.vts_request.requestTriggerHotKey(action_name)
-        await self.vts.request(send_hotkey_request)
-        await self.vts.close()
-
-    async def reconnect(self):
-        pass
+        try:
+            # self.vts = pyvts.vts(plugin_info=plugin_info)
+            # await self.vts.read_token()
+            await self.vts.connect()
+            assert self.vts.get_connection_status() == 1, '连接失败'
+            assert await self.vts.request_authenticate(), 'VTS连接异常-认证失败'
+            if action_name not in self.hotkey_list:
+                raise ValueError(f'动作不存在：{action_name}')
+            send_hotkey_request = self.vts.vts_request.requestTriggerHotKey(action_name)
+            await self.vts.request(send_hotkey_request)
+            log.info('播放动作结束')
+            await self.vts.close()
+        except Exception as e:
+            log.error(f'播放动作异常')
+            print('异常信息:', e)
 
     async def get_hotkey_list(self):
         response_data = await self.vts.request(self.vts.vts_request.requestHotKeyList())
@@ -79,10 +86,10 @@ class VTSOperator:
 async def test_vts():
     vts_opt = VTSOperator()
     await vts_opt.ainit()
-    for _ in range(30):
+    for _ in range(6 * 100):
         await vts_opt._aplay_action('喝牛奶')
-        time.sleep(4)
-        await vts_opt.vts.close()
+        time.sleep(10)
+        print('测试正常')
 
 
 if __name__ == '__main__':

@@ -23,8 +23,8 @@ class Brain:
 
 class Mouth:
     async def speak(self, speech_text):
-        log.info(f'step4:播放语音:{len(speech_text)}')
         speech_text = await tts.tts_save(speech_text)
+        log.info(f'step3:播放语音:{len(speech_text)}')
         tts.play_sound(speech_text)
 
 
@@ -39,8 +39,8 @@ class Body:
         }
         self.action_name = None
 
-
-    def feel(self, input_text):
+    async def action(self, input_text: str):
+        log.info('step3:生成动作')
         url = 'http://ai.newhopedairy.cn/api/openapi/kb/searchTest'
         POST = {
             "kbId": "6559dcc0ed049c3059f0e304",
@@ -50,24 +50,12 @@ class Body:
         }
         r = self.s.post(url, json=POST)
         r.raise_for_status()
-        self.action_name = [action['a'].strip('动作').strip('表情') for action in r.json()['data']][0]
-
-    async def action(self, action_name: str):
-        log.info(f'step4:播放动作:{action_name}')
+        action_name = [action['a'].strip('动作').strip('表情') for action in r.json()['data']][0]
+        log.info(f'step3:播放动作:{action_name}')
         if not action_name:
-            action_name = None
             return
-        times = 0
-        while 1:
-            try:
-                await self.vts_opt._aplay_action(action_name)
-                break
-            except Exception as e:
-                times += 1
-                if times > 3:
-                    log.error('重连过多,VTS连接丢失')
-                    raise e
-                await self.vts_opt.reconnect()
+        await self.vts_opt._aplay_action(action_name)
+
 
 class VTuber:
     def __init__(self):
