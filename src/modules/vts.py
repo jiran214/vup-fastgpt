@@ -4,6 +4,8 @@
 # @Author  : 雷雨
 # @File    : vts.py
 # @Desc    :
+import asyncio
+import json
 import threading
 import time
 from typing import Optional
@@ -61,17 +63,27 @@ class VTSOperator:
             # self.vts = pyvts.vts(plugin_info=plugin_info)
             # await self.vts.read_token()
             await self.vts.connect()
+            print('vts连接结束')
             assert self.vts.get_connection_status() == 1, '连接失败'
             assert await self.vts.request_authenticate(), 'VTS连接异常-认证失败'
+            print('vts认证结束')
             if action_name not in self.hotkey_list:
                 raise ValueError(f'动作不存在：{action_name}')
             send_hotkey_request = self.vts.vts_request.requestTriggerHotKey(action_name)
-            await self.vts.request(send_hotkey_request)
-            log.info('播放动作结束')
+            # await self.vts.request(send_hotkey_request)
+            await self.vts.websocket.send(json.dumps(send_hotkey_request))
+            print('vts发送指令')
+            try:
+                # 等待websocket
+                # 设置超时时间为5秒
+                response_msg = await asyncio.wait_for(self.vts.websocket.recv(), timeout=4.0)
+                response_msg = json.loads(response_msg)
+            except asyncio.TimeoutError:
+                response_msg = "未收到VTS回应"
+            log.info('播放动作结束 ', response_msg)
             await self.vts.close()
         except Exception as e:
-            log.error(f'播放动作异常')
-            print('异常信息:', e)
+            log.error(f'播放动作异常 {e}')
 
     async def get_hotkey_list(self):
         response_data = await self.vts.request(self.vts.vts_request.requestHotKeyList())

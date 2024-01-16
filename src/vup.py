@@ -62,7 +62,3 @@ class VTuber:
         self.brain = Brain()
         self.mouth = Mouth()
         self.body = Body() if config.action else None
-
-
-if __name__ == '__main__':
-    Body().feel('我讨厌你')
